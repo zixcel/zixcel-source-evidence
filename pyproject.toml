@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zixcel-source-evidence"
+version = "0.10.0"
+description = "Bounded, revision-pinned source observation; never semantic or execution authority"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+  "tree-sitter==0.26.0", "tree-sitter-rust==0.24.2",
+  "tree-sitter-typescript==0.23.2", "tree-sitter-javascript==0.25.0",
+  "tree-sitter-html==0.23.2", "tree-sitter-python==0.25.0",
+  "tree-sitter-bash==0.25.1", "sqlparse==0.6.0",
+  "tinycss2==1.5.1", "tree-sitter-yaml==0.7.2",
+  "tree-sitter-nix==0.1.0", "tree-sitter-make==1.1.1", "tree-sitter-powershell==0.26.4",
+]
+
+[project.scripts]
+zixcel-source-evidence = "zixcel_source_evidence.cli:main"
+
+[tool.setuptools.package-data]
+zixcel_source_evidence = ["*.mjs"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
