@@ -1,27 +1,60 @@
-# zixcel-source-evidence
+# zixcel-source-evidence interface reference
 
-Index source observations and query evidence tied to a specific source revision.
+Use the [usage guide](getting-started.md) for the first steps. This reference preserves the current interface details and operational limits. Run command examples from the repository root, after preparing the exact declared dependencies and registered configuration.
 
-## What you can do
+## Responsibility
 
-- Create and inspect a local source index.
-- Resolve bounded evidence queries to retained source references.
+Observe source without starting applications, build scripts, Cargo, project
+hooks, tests or language-server plugins. Store symbols, declared types, observed
+references and explicit unresolved relations. Query the immutable evidence
+without rereading repositories. Callers own semantic admission and integration of the resulting evidence.
 
-## Current scope
+The package uses Python's SQLite and compression libraries, pinned Tree-sitter
+grammars, sqlparse and tinycss2. Rust/JS/TS/Python/Shell and Starlark use syntax
+trees; TS declaration modules (`.d.mts`/`.cts`) are included. Vue script blocks
+use the TS adapter, HTML script blocks the JS adapter, with separate markup
+component observations. JSON,
+TOML and SQL are structured-file observations; CSS/YAML expose syntax-parsed
+rule/key declarations, not evaluation of CSS or workflow execution. Unknown formats are
+reported in inventory findings, not silently counted as analyzed.
+Nix, Makefile and PowerShell have syntax adapters; systemd unit files have a
+structured INI adapter. Executable extensionless shell/Python entrypoints are
+recognized from explicit supported shebangs. Nothing is executed. Symbol kinds
+are normalized (`Function`, `Method`, `Struct`, `BuildRule`, etc.), not parser
+node names. Make recipes are withheld as opaque source; command execution and
+Make expansion are not inferred from unparsed recipe text.
+For the Bash grammar's unsupported `0$MODE` arithmetic numeral form, a
+width-preserving syntax projection omits the numeral prefix only inside that
+arithmetic node. Original source bytes/digests remain the evidence; arithmetic
+evaluation is explicitly missing. Other parse errors still reject publication.
+Structured data expose top-level declarations with nested content revision-pinned,
+not one executable SymbolRef/effect per lockfile entry. Configuration keys do not
+populate StoreEffectIndex. This is explicit structured coverage, not an assertion
+that nested configuration values have runtime semantics.
 
-This is a source-evidence implementation. Complete semantic resolution and effect inference remain outside its current guarantees.
+## Install and use
 
-Package distribution is not activated by this documentation. Use the checked-in source and the declared dependency versions; published availability must be verified separately.
-
-## Getting started
+Build/install the wheel with standard Python packaging. Python >=3.12 on Linux
+is required (descriptor-relative paths, no-follow opens, advisory locks).
+No application source is executed during installation or analysis.
 
 ```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -e .
+zixcel-source-evidence index create /absolute/evidence.db /absolute/source --repository my-repository
+zixcel-source-evidence index status /absolute/evidence.db
+zixcel-source-evidence query symbols /absolute/evidence.db repair_pending_completion
+zixcel-source-evidence inspect symbol /absolute/evidence.db SYMBOL_ID
+zixcel-source-evidence packet build /absolute/evidence.db SYMBOL_ID --depth 2
+zixcel-source-evidence index update /absolute/evidence.db
+zixcel-source-evidence doctor /absolute/evidence.db
 ```
 
-## Examples and interface details
+Create requires an existing storage parent and a missing index. Update/rebuild
+require an existing valid index. A corrupt index is never repaired implicitly:
+create a separate explicitly chosen index, verify it, then retire the corrupt
+artifact. Every output is JSON; exit 2 means a typed failure or doctor findings.
+`index verify` checks index integrity; `doctor` additionally observes current
+source bytes and analyzer provenance. Index queries are pinned historical reads,
+not an assertion that live source still matches.
 
 ## API and identity
 
@@ -165,10 +198,19 @@ included. Only source identifiers and digests leave the observer. This is not a
 general DLP guarantee for secrets encoded as legal identifiers; deployments must
 scope repositories and avoid credential stores.
 
-## Documentation and source
+## Validation
 
-[Interface reference](docs/interface-reference.md)
+`python -m unittest discover -s tests -v` runs compound lifecycle, language,
+dependency, corruption, path, failure-injection and concurrent-reader journeys.
+Tests assert returned references, digests, state transitions and retained data.
+Compiler journeys require `SOURCE_EVIDENCE_RUST_ANALYZER`,
+`SOURCE_EVIDENCE_TYPESCRIPT`, and `SOURCE_EVIDENCE_NODE` artifact paths. Missing
+tools produce an explicit skipped journey; a product acceptance run must count
+skips as incomplete, not success. All three paths must refer to trusted installed
+tools, never executable content from an inspected repository.
+Full compiler/effect conformance and the complete C5 consumer run are separate
+acceptance requirements, not implied by these tests.
 
-[Usage guide](docs/getting-started.md)
-
-[Implementation and public interfaces](src) · [Verification cases](tests) · [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [License](LICENSE) · [Attribution notices](NOTICE)
+Source-domain dependency kinds and StoreEffectIndex stay here. Future generic
+revision-set/traversal primitives may be proposed separately; no generic Graph
+API or runtime authority is added by this package.
