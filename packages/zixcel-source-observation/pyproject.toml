@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zixcel-source-observation"
+version = "0.10.0"
+description = "Bounded, read-only observation of local folders and Open XML workbooks"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = []
+
+[project.scripts]
+zixcel-source-observation = "zixcel_source_observation.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

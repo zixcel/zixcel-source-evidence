@@ -81,8 +81,3 @@ __pycache__/
 /*.profraw
 /*.profdata
 /*.egg-info/
-**/target/
-**/dist/
-/packages/*/build/
-**/__pycache__/
-.local/

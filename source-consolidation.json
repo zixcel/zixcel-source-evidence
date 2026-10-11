@@ -1,0 +1,15 @@
+{
+  "schema": "source-consolidation-v1",
+  "components": [
+    {
+      "id": "zixcel-source-observation",
+      "owner_id": "zixcel-source-evidence",
+      "original_repository": "zixcel/zixcel-source-observation",
+      "owner_repository": "zixcel/zixcel-source-evidence",
+      "subpath": "packages/zixcel-source-observation",
+      "source_head": "a15ad56da09094091bddd7d6ebbceda814ce8869",
+      "history_ref": "refs/consolidated/zixcel-source-observation/original-HEAD"
+    }
+  ],
+  "status": "source consolidation maintained with original provenance; Rust/Vue ports and independent package publication pending"
+}
