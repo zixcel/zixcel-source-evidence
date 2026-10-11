@@ -1,0 +1,25 @@
+name: Source evidence and observation tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  source-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Install declared source dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/source-tests"
+          "$RUNNER_TEMP/source-tests/bin/pip" install .
+      - name: Verify bounded source evidence
+        run: '"$RUNNER_TEMP/source-tests/bin/python" -m unittest discover -s tests'
+      - name: Verify adopted read-only source observation
+        env:
+          PYTHONPATH: packages/zixcel-source-observation/src
+        run: '"$RUNNER_TEMP/source-tests/bin/python" -m unittest discover -s packages/zixcel-source-observation/tests'
