@@ -31,12 +31,7 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/source-tests"
           "$RUNNER_TEMP/source-tests/bin/pip" install .
       - name: Verify bounded source evidence
-        run: |
-          "$RUNNER_TEMP/source-tests/bin/python" - <<'PYCODE'
-          import sys, unittest
-          result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.discover('tests'))
-          sys.exit(0 if result.wasSuccessful() and not result.skipped else 1)
-          PYCODE
+        run: '"$RUNNER_TEMP/source-tests/bin/python" scripts/verify-source-tests.py'
       - name: Verify adopted read-only source observation
         env:
           PYTHONPATH: packages/zixcel-source-observation/src
