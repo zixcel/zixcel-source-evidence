@@ -60,3 +60,12 @@ Schema definitions in the map remain owned by their canonical validator and
 consumers. An absent schema file means no separate schema file is declared; it does
 not mean the runtime interface has no validation. Do not introduce another common
 schema solely to mirror an implementation type.
+
+## Current source-adapter boundary
+
+`SyntaxAdapter` is the implemented syntax observation path used by the bounded
+worker. The unused `LanguageAdapter` base class and its `NotImplementedError`
+placeholder are removed after checking the managed source consumers. This does
+not add compiler semantic/type-resolution authority to parser observations;
+missing compiler evidence remains explicitly missing. Existing evidence and
+observation acceptance tests cover the actual worker path.
