@@ -109,12 +109,7 @@ def sanitize(root, raw, maximum):
     return re.sub(rb"\b(?:0x[0-9a-fA-F]+|[0-9]{6,})\b", lambda m: b" " * len(m[0]), bytes(output))
 
 
-class LanguageAdapter:
-    def analyze(self, path, raw, file_id, owner, limits):
-        raise NotImplementedError
-
-
-class SyntaxAdapter(LanguageAdapter):
+class SyntaxAdapter:
     def __init__(self, language):
         self.language = language
 

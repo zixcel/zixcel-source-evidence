@@ -13,12 +13,25 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.97.1'
+          components: rust-analyzer
+      - name: Prepare fixed compiler observations
+        run: |
+          npm install --prefix "$RUNNER_TEMP/source-compiler" --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          echo "SOURCE_EVIDENCE_RUST_ANALYZER=$(rustup which rust-analyzer)" >> "$GITHUB_ENV"
+          echo "SOURCE_EVIDENCE_NODE=$(command -v node)" >> "$GITHUB_ENV"
+          echo "SOURCE_EVIDENCE_TYPESCRIPT=$RUNNER_TEMP/source-compiler/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
       - name: Install declared source dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/source-tests"
           "$RUNNER_TEMP/source-tests/bin/pip" install .
       - name: Verify bounded source evidence
-        run: '"$RUNNER_TEMP/source-tests/bin/python" -m unittest discover -s tests'
+        run: '"$RUNNER_TEMP/source-tests/bin/python" scripts/verify-source-tests.py'
       - name: Verify adopted read-only source observation
         env:
           PYTHONPATH: packages/zixcel-source-observation/src
