@@ -69,3 +69,9 @@ placeholder are removed after checking the managed source consumers. This does
 not add compiler semantic/type-resolution authority to parser observations;
 missing compiler evidence remains explicitly missing. Existing evidence and
 observation acceptance tests cover the actual worker path.
+
+Compiler observation acceptance now prepares Rust 1.97.1/rust-analyzer, Node
+24.15.0 and TypeScript 5.9.3 explicitly in source CI. Missing compiler artifacts
+or skipped evidence tests fail this acceptance lane. Local source acceptance ran
+all 17 evidence journeys without skips plus 7 observation tests. Full semantic or
+product conformance remains outside these syntax/source observations.
