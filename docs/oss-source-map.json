@@ -9,6 +9,7 @@
     "packages/zixcel-source-observation/src/zixcel_source_observation/cli.py",
     "packages/zixcel-source-observation/src/zixcel_source_observation/observe.py",
     "packages/zixcel-source-observation/tests/test_observation.py",
+    "scripts/verify-source-tests.py",
     "src/zixcel_source_evidence/cli.py",
     "src/zixcel_source_evidence/compiler.py",
     "src/zixcel_source_evidence/index.py",
@@ -71,6 +72,24 @@
               "condition": null
             },
             {
+              "name": null,
+              "run": null,
+              "uses": "actions/setup-node@v4",
+              "condition": null
+            },
+            {
+              "name": null,
+              "run": null,
+              "uses": "dtolnay/rust-toolchain@master",
+              "condition": null
+            },
+            {
+              "name": "Prepare fixed compiler observations",
+              "run": "npm install --prefix \"$RUNNER_TEMP/source-compiler\" --ignore-scripts --no-audit --no-fund typescript@5.9.3\necho \"SOURCE_EVIDENCE_RUST_ANALYZER=$(rustup which rust-analyzer)\" >> \"$GITHUB_ENV\"\necho \"SOURCE_EVIDENCE_NODE=$(command -v node)\" >> \"$GITHUB_ENV\"\necho \"SOURCE_EVIDENCE_TYPESCRIPT=$RUNNER_TEMP/source-compiler/node_modules/typescript/lib/typescript.js\" >> \"$GITHUB_ENV\"\n",
+              "uses": null,
+              "condition": null
+            },
+            {
               "name": "Install declared source dependencies",
               "run": "python3 -m venv \"$RUNNER_TEMP/source-tests\"\n\"$RUNNER_TEMP/source-tests/bin/pip\" install .\n",
               "uses": null,
@@ -78,7 +97,7 @@
             },
             {
               "name": "Verify bounded source evidence",
-              "run": "\"$RUNNER_TEMP/source-tests/bin/python\" -m unittest discover -s tests",
+              "run": "\"$RUNNER_TEMP/source-tests/bin/python\" scripts/verify-source-tests.py",
               "uses": null,
               "condition": null
             },
