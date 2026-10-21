@@ -20,12 +20,13 @@ jobs:
         with:
           toolchain: '1.97.1'
           components: rust-analyzer
+      - name: Verify typed compiler bridge and protocol boundaries
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run typecheck && npm test
       - name: Prepare fixed compiler observations
         run: |
-          npm install --prefix "$RUNNER_TEMP/source-compiler" --ignore-scripts --no-audit --no-fund typescript@5.9.3
           echo "SOURCE_EVIDENCE_RUST_ANALYZER=$(rustup which rust-analyzer)" >> "$GITHUB_ENV"
           echo "SOURCE_EVIDENCE_NODE=$(command -v node)" >> "$GITHUB_ENV"
-          echo "SOURCE_EVIDENCE_TYPESCRIPT=$RUNNER_TEMP/source-compiler/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
+          echo "SOURCE_EVIDENCE_TYPESCRIPT=$GITHUB_WORKSPACE/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
       - name: Install declared source dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/source-tests"

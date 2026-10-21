@@ -22,7 +22,7 @@ dependencies = [
 zixcel-source-evidence = "zixcel_source_evidence.cli:main"
 
 [tool.setuptools.package-data]
-zixcel_source_evidence = ["*.mjs"]
+zixcel_source_evidence = ["*.mts"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

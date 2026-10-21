@@ -15,7 +15,7 @@
     "src/zixcel_source_evidence/index.py",
     "src/zixcel_source_evidence/lsp.py",
     "src/zixcel_source_evidence/source.py",
-    "src/zixcel_source_evidence/typescript.mjs",
+    "src/zixcel_source_evidence/typescript.mts",
     "src/zixcel_source_evidence/worker.py",
     "tests/test_evidence.py"
   ],
