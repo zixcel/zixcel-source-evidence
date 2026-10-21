@@ -3,6 +3,7 @@
 import { createRequire } from 'node:module'
 import type * as TypeScript from 'typescript'
 import { CompilerFailure, decodeRequest } from './typescript-request.mts'
+import { requireCompilerApi } from './typescript-api.mts'
 const cap = 32 * 1024 * 1024
 let raw = '', received = 0
 try {
@@ -17,7 +18,7 @@ try {
   raw += decoder.decode()
   const request = decodeRequest(JSON.parse(raw) as unknown)
   // The Python caller pins the explicit compiler and Node artifacts before invocation.
-  const ts: typeof TypeScript = createRequire(import.meta.url)(request.module)
+  const ts = requireCompilerApi(createRequire(import.meta.url)(request.module) as unknown)
   const paths = Object.keys(request.files).sort()
   const options = { noEmit: true, noLib: true, allowJs: true, checkJs: true,
     target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.ESNext,

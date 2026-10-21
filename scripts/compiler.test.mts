@@ -5,7 +5,8 @@ import { mkdtempSync, readdirSync, existsSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { decodeRequest } from '../src/zixcel_source_evidence/typescript-request.mts'
+import { decodeRequest, CompilerFailure } from '../src/zixcel_source_evidence/typescript-request.mts'
+import { requireCompilerApi } from '../src/zixcel_source_evidence/typescript-api.mts'
 const require = createRequire(import.meta.url)
 const module = require.resolve('typescript')
 const helper = new URL('../src/zixcel_source_evidence/typescript.mts', import.meta.url).pathname
@@ -51,4 +52,11 @@ test('compiler guest contains only typed first-party entrypoints', () => {
   const names = readdirSync(new URL('../src/zixcel_source_evidence', import.meta.url))
   assert.deepEqual(names.filter(name => /\.(?:c|m)?js$/.test(name)), [])
   assert.ok(names.includes('typescript.mts') && names.includes('typescript-request.mts'))
+})
+
+test('missing native or partial compiler APIs are unavailable, never an empty successful observation', () => {
+  for(const value of [null,{}, {version:'7.0.2'}, {version:'5.9.3',createProgram:()=>{}}]){
+    assert.throws(()=>requireCompilerApi(value), (error:unknown)=>error instanceof CompilerFailure&&error.code==='AnalyzerUnavailable')
+  }
+  assert.equal(requireCompilerApi(require('typescript') as unknown).version,'5.9.3')
 })
