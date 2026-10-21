@@ -5,5 +5,5 @@
   "license": "Apache-2.0",
   "engines": { "node": ">=24.15.0 <25" },
   "scripts": { "typecheck": "tsc -p tsconfig.compiler.json", "test": "node --test scripts/compiler.test.mts" },
-  "devDependencies": { "@types/node": "24.19.2", "typescript": "5.9.3" }
+  "devDependencies": { "@types/node": "24.19.2", "typescript": "7.0.2" }
 }
