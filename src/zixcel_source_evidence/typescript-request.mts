@@ -1,6 +1,6 @@
 import { isAbsolute } from 'node:path'
 export interface CompilerRequest { module: string; files: Record<string, string>; max_nodes: number; max_results: number; memory_bytes: number }
-export type FailureCode = 'ResourceLimitExceeded' | 'ResolutionFailure'
+export type FailureCode = 'ResourceLimitExceeded' | 'ResolutionFailure' | 'AnalyzerUnavailable'
 export class CompilerFailure extends Error {
   readonly code: FailureCode
   constructor(code: FailureCode) { super(code); this.code = code }
