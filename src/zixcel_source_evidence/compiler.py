@@ -201,7 +201,7 @@ def enrich_typescript(db, root, limits, selected_files, configuration):
         if len(payload) > 32*1024*1024:
             raise EvidenceError(Code.ResourceLimitExceeded, "compiler input envelope")
         try:
-            result = subprocess.run([str(node), "--max-old-space-size=256", str(Path(__file__).with_name("typescript.mjs"))],
+            result = subprocess.run([str(node), "--max-old-space-size=256", str(Path(__file__).with_name("typescript.mts"))],
                 input=payload, capture_output=True, timeout=limits.parser_seconds,
                 env={"PATH": "/usr/bin:/bin"}, cwd="/")
         except (OSError, subprocess.TimeoutExpired) as error:
