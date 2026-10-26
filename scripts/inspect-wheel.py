@@ -68,7 +68,7 @@ def inspect(path):
     metadata = BytesParser().parsebytes(files[prefix + "METADATA"])
     require(metadata["Name"] == declaration["name"] and metadata["Version"] == version, "wheel identity differs")
     require(sorted(metadata.get_all("License-File", [])) == sorted(licenses), "wheel license file metadata differs")
-    require(metadata.get_payload().strip() == (ROOT / declaration["readme"]).read_text().strip(), "wheel description differs")
+    require(metadata.get_payload(decode=True).strip() == (ROOT / declaration["readme"]).read_bytes().strip(), "wheel description differs")
     require(metadata["Requires-Python"] == declaration["requires-python"], "wheel Python boundary differs")
     require(metadata["License-Expression"] == declaration["license"], "wheel license expression differs")
     require(sorted(metadata.get_all("Requires-Dist", [])) == sorted(declaration["dependencies"]), "wheel dependencies differ")
