@@ -35,7 +35,10 @@ def inspect(path):
     source = {"zixcel_source_evidence/" + item.name: item.read_bytes()
               for item in (ROOT / "src/zixcel_source_evidence").iterdir() if item.suffix in {".py", ".mts"}}
     prefix = "zixcel_source_evidence-" + version + ".dist-info/"
-    metadata_names = {prefix + name for name in ["METADATA", "WHEEL", "entry_points.txt", "top_level.txt", "RECORD", "licenses/LICENSE"]}
+    licenses = declaration["license-files"]
+    require(len(set(licenses)) == len(licenses) and all(PurePosixPath(name).parts == (name,) for name in licenses), "invalid license file definition")
+    metadata_names = {prefix + name for name in ["METADATA", "WHEEL", "entry_points.txt", "top_level.txt", "RECORD"]}
+    metadata_names.update(prefix + "licenses/" + name for name in licenses)
     with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), "rb") as stream:
         before = os.fstat(stream.fileno())
         require(stat.S_ISREG(before.st_mode) and before.st_size <= 2097152, "wheel file boundary rejected")
@@ -60,9 +63,12 @@ def inspect(path):
                 (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns), "wheel changed during inspection")
     for name, content in source.items():
         require(files[name] == content, "wheel runtime bytes differ from source")
-    require(files[prefix + "licenses/LICENSE"] == (ROOT / "LICENSE").read_bytes(), "wheel license differs")
+    for name in licenses:
+        require(files[prefix + "licenses/" + name] == (ROOT / name).read_bytes(), "wheel license/notice differs")
     metadata = BytesParser().parsebytes(files[prefix + "METADATA"])
     require(metadata["Name"] == declaration["name"] and metadata["Version"] == version, "wheel identity differs")
+    require(sorted(metadata.get_all("License-File", [])) == sorted(licenses), "wheel license file metadata differs")
+    require(metadata.get_payload().strip() == (ROOT / declaration["readme"]).read_text().strip(), "wheel description differs")
     require(metadata["Requires-Python"] == declaration["requires-python"], "wheel Python boundary differs")
     require(metadata["License-Expression"] == declaration["license"], "wheel license expression differs")
     require(sorted(metadata.get_all("Requires-Dist", [])) == sorted(declaration["dependencies"]), "wheel dependencies differ")

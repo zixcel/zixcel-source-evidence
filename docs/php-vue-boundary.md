@@ -43,3 +43,12 @@ withholding, reopened packet identity and the absence of PHP execution. Full own
 CI also tests the installed Python distribution and existing compiler/observation
 journeys. Local focused tests use unchanged 512 MiB operation limits and a fresh
 owned test process; they do not resume held host/model/isolation trials.
+
+
+Distribution verification uses a clean committed checkout. The retained standard
+wheel is compared against every runtime Python/MTS source, its standard RECORD,
+entry points/dependencies, README and all three declared license/notice files.
+Unknown members (including retired JavaScript in stale build output) fail before
+publication. Do not reuse an old `build/lib` snapshot as a package source. The
+wheel wrapper is pure Python, but current observation/worker acceptance is Linux
+with Python 3.12+; no Windows, macOS or resumed host trial is implied.
