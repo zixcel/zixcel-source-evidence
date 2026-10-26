@@ -30,10 +30,23 @@ jobs:
       - name: Install declared source dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/source-tests"
-          "$RUNNER_TEMP/source-tests/bin/pip" install .
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          mkdir -p .local/artifacts/wheel
+          "$RUNNER_TEMP/source-tests/bin/pip" wheel --no-deps --wheel-dir .local/artifacts/wheel .
+          "$RUNNER_TEMP/source-tests/bin/python" scripts/inspect-wheel.py .local/artifacts/wheel/*.whl .local/artifacts/wheel-receipt.json
+          "$RUNNER_TEMP/source-tests/bin/pip" install .local/artifacts/wheel/*.whl
       - name: Verify bounded source evidence
         run: '"$RUNNER_TEMP/source-tests/bin/python" scripts/verify-source-tests.py'
       - name: Verify adopted read-only source observation
         env:
           PYTHONPATH: packages/zixcel-source-observation/src
         run: '"$RUNNER_TEMP/source-tests/bin/python" -m unittest discover -s packages/zixcel-source-observation/tests'
+
+      - name: Retain the verified Python distribution and exact-source receipt
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: source-evidence-wheel-${{ github.sha }}
+          path: |
+            .local/artifacts/wheel/*.whl
+            .local/artifacts/wheel-receipt.json
+          if-no-files-found: error

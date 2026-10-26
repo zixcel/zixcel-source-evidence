@@ -6,7 +6,7 @@ from .model import Code, EvidenceError, Limits, digest, ref, RepositoryRef
 
 LANGUAGES = {".rs": "rust", ".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
              ".mts": "typescript", ".cts": "typescript", ".bazel": "starlark", ".bzl": "starlark", ".html": "html",
-             ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".vue": "vue",
+             ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".vue": "vue", ".php": "php",
              ".py": "python", ".sh": "bash", ".sql": "sql", ".json": "json", ".toml": "toml",
              ".css": "css", ".md": "documentation", ".yaml": "yaml", ".yml": "yaml"}
 LANGUAGES.update({".nix": "nix", ".ps1": "powershell", ".service": "ini", ".timer": "ini"})

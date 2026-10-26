@@ -176,3 +176,10 @@ scope repositories and avoid credential stores.
 [OSS responsibility and source completion](docs/oss-source-contract.md) defines the supported package boundary and required acceptance. It does not declare unexecuted source, distribution or production checks complete.
 
 Dependency updates: [repository policy](docs/dependency-updates.md).
+
+## PHP and Vue syntax boundary (0.11.0)
+
+PHP source observations and multiple Vue script blocks share the existing native
+index/packet API. See [the versioned boundary](docs/php-vue-boundary.md) for symbol
+kinds, compiler/runtime residuals, literal withholding and explicit caller
+migration. Declared source relationships do not establish program equivalence.

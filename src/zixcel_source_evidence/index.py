@@ -392,12 +392,16 @@ class Index:
             if file_ids is not None and row["id"] not in file_ids:
                 continue
             data = unpack(row["analysis"])
+            # PHP namespace/autoload/runtime dispatch and multi-block Vue scopes
+            # require their native compiler; syntax names cannot authorize bindings.
+            adapter = data["adapter"]["adapter"]
+            can_bind = adapter != "php" and not (adapter == "vue" and data.get("syntax_units", 1) != 1)
             module_bindings = {}
             for ordinal, item in enumerate(data["edges"]):
                 targets = item["targets"]
                 resolution = item["resolution"]
                 module = item.get("module", "")
-                if item["kind"] in {"Import", "Module", "Include"}:
+                if can_bind and item["kind"] in {"Import", "Module", "Include"}:
                     if item["kind"] == "Module":
                         base = posixpath.dirname(row["path"]) if posixpath.basename(row["path"]) in {"lib.rs", "main.rs", "mod.rs"} else row["path"][:-3]
                         candidates = [base + "/" + item["name"] + ".rs", base + "/" + item["name"] + "/mod.rs"]
@@ -414,7 +418,7 @@ class Index:
                     resolution = "Resolved" if len(targets) == 1 else "CandidateTargets" if targets else "Unresolved"
                     for alias in item.get("aliases", []):
                         module_bindings[alias["local"]] = [(fid, alias["name"]) for fid in targets]
-                if item["kind"] == "Call" and item["name"].isidentifier():
+                if can_bind and item["kind"] == "Call" and item["name"].isidentifier():
                     candidates = list(db.execute("SELECT id,data FROM symbols WHERE file=? AND name=? ORDER BY id",
                                                 (row["id"], item["name"])))
                     targets = [c["id"] for c in candidates]
@@ -429,7 +433,7 @@ class Index:
                         for imported_file, imported_name in module_bindings.get(item["name"], []):
                             targets.extend(c[0] for c in db.execute("SELECT id FROM symbols WHERE file=? AND name=? ORDER BY id", (imported_file, imported_name)))
                         resolution = "CandidateTargets" if targets else "Unresolved"
-                elif item["kind"] == "Call" and re.fullmatch(r"(?:self|Self)[.:]+\w+", item["name"]):
+                elif can_bind and item["kind"] == "Call" and re.fullmatch(r"(?:self|Self)[.:]+\w+", item["name"]):
                     source_row = db.execute("SELECT data FROM symbols WHERE id=?", (item["source"],)).fetchone()
                     if source_row:
                         source = unpack(source_row[0])

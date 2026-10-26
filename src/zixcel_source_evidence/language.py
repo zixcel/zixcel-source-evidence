@@ -11,12 +11,12 @@ import re
 import tomllib
 import configparser
 from pathlib import Path
-from .model import Code, EvidenceError, SymbolRef, TypeRef, ref, digest
+from .model import VERSION, Code, EvidenceError, SymbolRef, TypeRef, ref, digest
 
 GRAMMARS = {"rust": ("rust", "language"), "typescript": ("typescript", "language_typescript"),
             "tsx": ("typescript", "language_tsx"), "javascript": ("javascript", "language"),
             "python": ("python", "language"), "bash": ("bash", "language"), "vue": ("html", "language"),
-            "yaml": ("yaml", "language"), "starlark": ("python", "language"), "html": ("html", "language")}
+            "php": ("php", "language_php"), "yaml": ("yaml", "language"), "starlark": ("python", "language"), "html": ("html", "language")}
 GRAMMARS.update({name: (name, "language") for name in ["nix", "make", "powershell"]})
 DEFINITIONS = {"function_item", "function_signature_item", "struct_item", "enum_item", "trait_item",
                "type_item", "mod_item", "const_item", "static_item", "function_declaration",
@@ -39,6 +39,16 @@ LITERALS = {"string", "string_literal", "raw_string_literal", "interpreted_strin
             "char_literal", "template_string", "string_content", "string_fragment", "comment",
             "line_comment", "block_comment", "heredoc_body", "raw_text"}
 LITERALS.update({"string_expression", "indented_string_expression", "uri_expression", "shell_text"})
+PHP_DEFINITIONS = {"namespace_definition": "Namespace", "method_declaration": "Method",
+                   "trait_declaration": "Trait", "enum_declaration": "Enum", "anonymous_function": "Function"}
+PHP_CALLS = {"function_call_expression", "member_call_expression", "scoped_call_expression", "object_creation_expression"}
+PHP_IMPORTS = {"namespace_use_declaration", "include_expression", "include_once_expression", "require_expression", "require_once_expression"}
+PHP_LITERALS = {"text", "text_interpolation", "heredoc", "nowdoc"}
+LANGUAGE_MISSING = {
+    "php": ["php_namespace_resolution", "php_autoload_resolution", "php_runtime_effects"],
+    "vue": ["vue_template_semantics", "vue_style_semantics", "vue_sfc_compiler"],
+}
+
 def implementation_digest():
     return digest({p.name: digest(p.read_bytes()) for p in sorted(Path(__file__).parent.iterdir())
                    if p.suffix in {".py", ".mjs"}})
@@ -66,7 +76,7 @@ def provenance(language):
         packages["sqlparse"] = installed_version("sqlparse")
     elif language == "css":
         packages["tinycss2"] = installed_version("tinycss2")
-    return {"adapter": language, "versions": packages, "rule": "source/ast/0.10.0", "implementation": ANALYZER_DIGEST}
+    return {"adapter": language, "versions": packages, "rule": f"source/ast/{VERSION}", "implementation": ANALYZER_DIGEST}
 
 
 def parser(language):
@@ -94,14 +104,17 @@ def label(node, data):
     if node is None:
         return ""
     text = data[node.start_byte:node.end_byte].decode()
+    # PHP qualified identifiers are syntax, not quoted include paths or literals.
+    if node.type in {"namespace_name", "qualified_name", "relative_name"} and len(text) <= 512 and re.fullmatch(r"\\?[^\W\d][\w\\]*", text):
+        return text
     # Labels may contain code identifiers/operators, never arbitrary literals.
     return text if len(text) <= 512 and re.fullmatch(r"[\w\s:.$<>,&*?!\[\]/()=+\-]+", text) else "<expression>"
 
 
-def sanitize(root, raw, maximum):
+def sanitize(root, raw, maximum, extra_literals=frozenset()):
     output = bytearray(raw)
     for node in walk(root, maximum):
-        if node.type in LITERALS or "comment" in node.type or "string" in node.type:
+        if node.type in LITERALS or node.type in extra_literals or "comment" in node.type or "string" in node.type:
             for i in range(node.start_byte, node.end_byte):
                 if output[i] not in (10, 13):
                     output[i] = 32
@@ -162,13 +175,16 @@ class SyntaxAdapter:
                     if name and name[0].isupper():
                         extra.append({"kind": "Component", "name": name, "start": node.start_byte,
                                       "source": file_id, "resolution": "Unresolved", "targets": []})
-        symbols, edges, types = [], extra, []
+        definitions_for_language = {**SYMBOL_KINDS, **(PHP_DEFINITIONS if language == "php" else {})}
+        calls = CALLS | (PHP_CALLS if language == "php" else set())
+        imports = IMPORTS | (PHP_IMPORTS if language == "php" else set())
+        symbols, edges, types, occurrences = [], extra, [], {}
         module_source = bytearray(10 if b == 10 else 32 for b in raw)
         for syntax, data, offset, lang in units:
-            clean = sanitize(syntax, data, limits.ast_nodes)
+            clean = sanitize(syntax, data, limits.ast_nodes, PHP_LITERALS if language == "php" else frozenset())
             module_source[offset:offset+len(data)] = clean
             # Keep byte offsets stable by only using original slice boundaries below.
-            definitions, occurrences = [], {}
+            definitions = []
             nodes = list(walk(syntax, limits.ast_nodes))
             shadowed = set()
             for binding in nodes:
@@ -177,21 +193,21 @@ class SyntaxAdapter:
                     if pattern:
                         shadowed.update(label(n, data) for n in walk(pattern, limits.ast_nodes) if n.type == "identifier")
             for node in nodes:
-                if node.type not in DEFINITIONS:
+                if node.type not in definitions_for_language:
                     continue
                 name_node = node.child_by_field_name("name")
                 if name_node is None:
                     name_node = (node.child_by_field_name("attrpath") or
                                  next((c for c in node.named_children if c.type in {"function_name", "targets"}), None))
-                if name_node is None and node.parent and node.parent.type in {"variable_declarator", "assignment"}:
+                if name_node is None and node.parent and node.parent.type in {"variable_declarator", "assignment", "assignment_expression"}:
                     name_node = node.parent.child_by_field_name("name") or node.parent.child_by_field_name("left")
                 name = label(name_node, data) or "<anonymous>"
                 ancestors, attributes, scope, parent = [], [], [], node.parent
                 method_context = False
                 while parent:
-                    if parent.type in {"impl_item", "trait_item", "class_definition", "class_declaration"}:
+                    if parent.type in {"impl_item", "trait_item", "class_definition", "class_declaration", "trait_declaration", "interface_declaration"}:
                         method_context = True
-                    if parent.type in DEFINITIONS or parent.type == "impl_item":
+                    if parent.type in definitions_for_language or parent.type == "impl_item":
                         item = parent.child_by_field_name("name") or parent.child_by_field_name("type")
                         scope.append(label(item, data) or parent.type)
                     # cfg evidence is syntax, not evaluation under a guessed target.
@@ -215,7 +231,7 @@ class SyntaxAdapter:
                 start, end = node.start_byte + offset, node.end_byte + offset
                 snippet = clean[node.start_byte:node.end_byte].decode()
                 parameters = node.child_by_field_name("parameters")
-                symbol_kind = SYMBOL_KINDS[node.type]
+                symbol_kind = definitions_for_language[node.type]
                 if method_context and symbol_kind == "Function":
                     symbol_kind = "Method"
                 entry = {"id": identity, "file": file_id, "owner": owner, "name": name,
@@ -225,7 +241,7 @@ class SyntaxAdapter:
                          "attributes": sorted(set(attributes)),
                          "parameter_count": parameters.named_child_count if parameters else None,
                          "cfg": sorted(set(a for a in ancestors if a.startswith("#[cfg") and '"' not in a)),
-                         "resolution": "PartiallyResolved", "missing": ["compiler_type_resolution", "dynamic_dispatch"] +
+                         "resolution": "PartiallyResolved", "missing": ["compiler_type_resolution", "dynamic_dispatch"] + LANGUAGE_MISSING.get(language, []) +
                              (["arithmetic_expansion_evaluation"] if projections else [])}
                 symbols.append(entry)
                 definitions.append((node.start_byte, node.end_byte, identity))
@@ -241,12 +257,12 @@ class SyntaxAdapter:
                 return min(matches, key=lambda v: v[1] - v[0])[2] if matches else file_id
             for node in nodes:
                 kind, name = None, ""
-                if node.type in CALLS:
+                if node.type in calls:
                     fn = node.child_by_field_name("function") or node.child_by_field_name("name") or node.child_by_field_name("command_name")
                     kind, name = "Call", label(fn, data)
                 elif node.type == "macro_invocation":
                     kind, name = "Macro", label(node.child_by_field_name("macro"), data)
-                elif node.type in IMPORTS:
+                elif node.type in imports:
                     # Exported declarations are already symbols; preserve the import node digest.
                     kind, name = "Import", label(node, data)
                 elif node.type == "mod_item" and node.child_by_field_name("body") is None:
@@ -295,8 +311,8 @@ class SyntaxAdapter:
                 edges.append(record)
         return {"symbols": symbols, "edges": edges, "types": list({t["id"]: t for t in types}.values()),
                 "adapter": provenance(language), "coverage": "PartiallyResolved", "syntax_projections": projections,
-                "module_source": module_source.decode(),
-                "missing": ["compiler_type_resolution", "macro_expansion", "dynamic_dispatch"]}
+                "module_source": module_source.decode(), "syntax_units": len(units),
+                "missing": ["compiler_type_resolution", "macro_expansion", "dynamic_dispatch"] + LANGUAGE_MISSING.get(language, [])}
 
 
 def structured(language, path, raw, file_id, owner, limits):
