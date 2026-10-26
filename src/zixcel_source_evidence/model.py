@@ -5,7 +5,7 @@ import hashlib
 import json
 import zlib
 
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 FORMAT = "zixcel/source/evidence/1"
 
 
